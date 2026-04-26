@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Untitled</title>
+    <link rel="stylesheet" href="./style.css">
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertisseur de Devises Global</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        select {
+            max-width: 100%;
+            text-overflow: ellipsis;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="max-w-md w-full glass-card rounded-3xl shadow-2xl p-8">
+        <!-- En-tête -->
+        <div class="text-center mb-8">
+            <div class="inline-block p-3 bg-indigo-600 rounded-2xl text-white mb-4 shadow-lg">
+                <i class="fas fa-money-bill-transfer fa-2x"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-800">Convertisseur Pro</h1>
+            <p class="text-slate-500 text-sm">Taux mondiaux triés par ordre alphabétique</p>
+        </div>
+
+        <!-- Formulaire -->
+        <div class="space-y-5">
+            <!-- Montant -->
+            <div>
+                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Montant</label>
+                <input type="number" id="amount" value="1" step="any"
+                    class="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 px-5 text-xl font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+            </div>
+
+            <!-- Devises -->
+            <div class="space-y-4">
+                <div class="relative">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">De</label>
+                    <select id="fromCurrency" 
+                        class="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-sm">
+                        <!-- Rempli par JS -->
+                    </select>
+                </div>
+
+                <div class="flex justify-center -my-2 relative z-10">
+                    <button id="swapBtn" class="bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 transition-transform active:scale-90">
+                        <i class="fas fa-arrows-up-down"></i>
+                    </button>
+                </div>
+
+                <div class="relative">
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Vers</label>
+                    <select id="toCurrency" 
+                        class="w-full bg-white border border-slate-200 rounded-xl py-3 px-4 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer shadow-sm">
+                        <!-- Rempli par JS -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Résultat -->
+            <div id="resultContainer" class="mt-8 p-6 bg-indigo-50 rounded-2xl border border-indigo-100 text-center">
+                <p id="exchangeRateText" class="text-indigo-600 text-sm font-semibold mb-1">Initialisation...</p>
+                <h2 id="convertedAmount" class="text-3xl font-black text-slate-900">--</h2>
+            </div>
+
+            <p id="updateTime" class="text-center text-[10px] text-slate-400 italic mt-4">
+                Mise à jour automatique en cours...
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const amountInput = document.getElementById('amount');
+        const fromCurrency = document.getElementById('fromCurrency');
+        const toCurrency = document.getElementById('toCurrency');
+        const convertedAmount = document.getElementById('convertedAmount');
+        const exchangeRateText = document.getElementById('exchangeRateText');
+        const swapBtn = document.getElementById('swapBtn');
+        const updateTime = document.getElementById('updateTime');
+
+        // Dictionnaire étendu des noms de devises en français
+        const currencyNames = {
+            "AED": "Dirham des Émirats", "AFN": "Afghani afghan", "ALL": "Lek albanais", "AMD": "Dram arménien",
+            "ANG": "Florin antillais", "AOA": "Kwanza angolais", "ARS": "Peso argentin", "AUD": "Dollar australien",
+            "BBD": "Dollar barbadien", "BDT": "Taka bangladais", "BGN": "Lev bulgare", "BHD": "Dinar bahreïni",
+            "BIF": "Franc burundais", "BMD": "Dollar bermudien", "BND": "Dollar de Brunei", "BOB": "Boliviano bolivien",
+            "BRL": "Réal brésilien", "BSD": "Dollar bahaméen", "BTN": "Ngultrum bouthanais", "BWP": "Pula botswanais",
+            "BYN": "Rouble biélorusse", "BZD": "Dollar bélizien", "CAD": "Dollar canadien", "CDF": "Franc congolais",
+            "CHF": "Franc suisse", "CLP": "Peso chilien", "CNY": "Yuan chinois", "COP": "Peso colombien",
+            "CRC": "Colón costaricain", "CUP": "Peso cubain", "CVE": "Escudo cap-verdien", "CZK": "Couronne tchèque",
+            "DJF": "Franc djiboutien", "DKK": "Couronne danoise", "DOP": "Peso dominicain", "DZD": "Dinar algérien",
+            "EGP": "Livre égyptienne", "ERN": "Nakfa érythréen", "ETB": "Birr éthiopien", "EUR": "Euro",
+            "FJD": "Dollar fidjien", "FKP": "Livre des Falkland", "FOK": "Couronne féroïenne", "GBP": "Livre sterling",
+            "GEL": "Lari géorgien", "GGP": "Livre de Guernesey", "GHS": "Cedi ghanéen", "GIP": "Livre de Gibraltar",
+            "GMD": "Dalasi gambien", "GNF": "Franc guinéen", "GTQ": "Quetzal guatémaltèque", "GYD": "Dollar guuyanais",
+            "HKD": "Dollar de Hong Kong", "HNL": "Lempira hondurien", "HRK": "Kuna croate", "HTG": "Gourde haïtienne",
+            "HUF": "Forint hongrois", "IDR": "Roupie indonésienne", "ILS": "Shekel israélien", "IMP": "Livre de l'Île de Man",
+            "INR": "Roupie indienne", "IQD": "Dinar irakien", "IRR": "Rial iranien", "ISK": "Couronne islandaise",
+            "JEP": "Livre de Jersey", "JMD": "Dollar jamaïcain", "JOD": "Dinar jordanien", "JPY": "Yen japonais",
+            "KES": "Shilling kényan", "KGS": "Som kirghize", "KHR": "Riel cambodgien", "KID": "Dollar des Kiribati",
+            "KMF": "Franc comorien", "KRW": "Won sud-coréen", "KWD": "Dinar koweïtien", "KYD": "Dollar des îles Caïmans",
+            "KZT": "Tenge kazakh", "LAK": "Kip laotien", "LBP": "Livre libanaise", "LKR": "Roupie srilankaise",
+            "LRD": "Dollar libérien", "LSL": "Loti lesothan", "LYD": "Dinar libyen", "MAD": "Dirham marocain",
+            "MDL": "Leu moldave", "MGA": "Ariary malgache", "MKD": "Denar macédonien", "MMK": "Kyat birman",
+            "MNT": "Tugrik mongol", "MOP": "Pataca macanaise", "MRU": "Ouguiya mauritanienne", "MUR": "Roupie mauricienne",
+            "MVR": "Rufiyaa maldivienne", "MWK": "Kwacha malawite", "MXN": "Peso mexicain", "MYR": "Ringgit malais",
+            "MZN": "Metical mozambicain", "NAD": "Dollar namibien", "NGN": "Naira nigérian", "NIO": "Córdoba nicaraguayen",
+            "NOK": "Couronne norvégienne", "NPR": "Roupie népalaise", "NZD": "Dollar néo-zélandais", "OMR": "Rial omanais",
+            "PAB": "Balboa panaméen", "PEN": "Sol péruvien", "PGK": "Kina papouan", "PHP": "Peso philippin",
+            "PKR": "Roupie pakistanaise", "PLN": "Zloty polonais", "PYG": "Guaraní paraguayen", "QAR": "Rial qatari",
+            "RON": "Leu roumain", "RSD": "Dinar serbe", "RUB": "Rouble russe", "RWF": "Franc rwandais",
+            "SAR": "Rial saoudien", "SBD": "Dollar des îles Salomon", "SCR": "Roupie seychelloise", "SDG": "Livre soudanaise",
+            "SEK": "Couronne suédoise", "SGD": "Dollar de Singapour", "SHP": "Livre de Sainte-Hélène", "SLE": "Leone sierra-léonais",
+            "SOS": "Shilling somalien", "SRD": "Dollar surinamais", "SSP": "Livre sud-soudanaise", "STN": "Dobra santoméen",
+            "SYP": "Livre syrienne", "SZL": "Lilangeni swazi", "THB": "Baht thaïlandais", "TJS": "Somoni tadjik",
+            "TMT": "Manat turkmène", "TND": "Dinar tunisien", "TOP": "Paʻanga tongan", "TRY": "Livre turque",
+            "TTD": "Dollar de Trinité-et-Tobago", "TVD": "Dollar tuvaluan", "TWD": "Dollar taïwanais", "TZS": "Shilling tanzanien",
+            "UAH": "Hryvnia ukrainienne", "UGX": "Shilling ougandais", "USD": "Dollar américain", "UYU": "Peso uruguayen",
+            "UZS": "Som ouzbek", "VES": "Bolívar vénézuélien", "VND": "Dông vietnamien", "VUV": "Vatu vanuatais",
+            "WST": "Tala samoan", "XAF": "Franc CFA (BEAC)", "XCD": "Dollar des Caraïbes", "XDR": "Droits de tirage spéciaux",
+            "XOF": "Franc CFA (BCEAO)", "XPF": "Franc CFP", "YER": "Rial yéménite", "ZAR": "Rand sud-africain",
+            "ZMW": "Kwacha zambien", "ZWL": "Dollar zimbabwéen"
+        };
+
+        async function init() {
+            try {
+                const response = await fetch('https://open.er-api.com/v6/latest/USD');
+                const data = await response.json();
+                const codes = Object.keys(data.rates);
+
+                populateSelectors(codes);
+                
+                fromCurrency.value = "EUR";
+                toCurrency.value = "USD";
+
+                amountInput.addEventListener('input', convert);
+                fromCurrency.addEventListener('change', convert);
+                toCurrency.addEventListener('change', convert);
+                swapBtn.addEventListener('click', swapCurrencies);
+
+                convert();
+            } catch (error) {
+                showError();
+            }
+        }
+
+        function populateSelectors(codes) {
+            // Tri alphabétique explicite des codes (A -> Z)
+            codes.sort((a, b) => a.localeCompare(b)).forEach(code => {
+                const name = currencyNames[code] || code;
+                const displayText = `${code} - ${name}`;
+                
+                fromCurrency.add(new Option(displayText, code));
+                toCurrency.add(new Option(displayText, code));
+            });
+        }
+
+        async function convert() {
+            const amount = parseFloat(amountInput.value);
+            const from = fromCurrency.value;
+            const to = toCurrency.value;
+
+            if (isNaN(amount) || amount <= 0) {
+                convertedAmount.innerText = "0.00";
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://open.er-api.com/v6/latest/${from}`);
+                const data = await response.json();
+                
+                if (data.result === "success") {
+                    const rate = data.rates[to];
+                    const total = (amount * rate).toLocaleString('fr-FR', { 
+                        minimumFractionDigits: 2, 
+                        maximumFractionDigits: 2 
+                    });
+                    
+                    convertedAmount.innerText = `${total} ${to}`;
+                    exchangeRateText.innerText = `1 ${from} = ${rate.toFixed(4)} ${to}`;
+                    
+                    const date = new Date(data.time_last_update_utc);
+                    updateTime.innerText = `Mis à jour le : ${date.toLocaleString('fr-FR')}`;
+                }
+            } catch (error) {
+                showError();
+            }
+        }
+
+        function swapCurrencies() {
+            const temp = fromCurrency.value;
+            fromCurrency.value = toCurrency.value;
+            toCurrency.value = temp;
+            convert();
+        }
+
+        function showError() {
+            exchangeRateText.innerText = "Erreur de connexion";
+            convertedAmount.innerText = "Indisponible";
+            exchangeRateText.classList.add('text-red-500');
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
+    <script  src="./script.js"></script>
+
+  </body>
+  
+</html>
